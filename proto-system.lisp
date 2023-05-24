@@ -662,9 +662,7 @@
       ',instance-variables
       ',class-variables)))
 
-
 ;;;; From here on, we can use define-class, define-method and send.
-
 
 ;;; ====================================================================
 ;;;   Selector
@@ -673,8 +671,3 @@
   (let* ((tr (m::new/0 (the-class 'proto-selector-translation)))
          (translated (m::translate-selector/1 tr name)))
     `(quote ,translated)))
-
-
-(export '(object
-
-send sendc cascade))
