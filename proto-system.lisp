@@ -22,8 +22,7 @@
            #:define-method
            #:define-class-method
            #:define-class)
-  (:shadow "CLASS"
-           "SET"))
+  (:shadow "CLASS"))
 
 (in-package :symbolic-smalltalk-proto-system)
 
