@@ -1,28 +1,44 @@
+;;; This package tries to implement, using CLOS, the system of classes
+;;; described in chapter 16 of the Smalltalk-80 "Blue book"
+;;; ("Smalltalk-80: the language and its implementation" by Goldberg
+;;; and Robson).
+
 (defpackage :symbolic-smalltalk-methods (:use))
 
 (defpackage :symbolic-smalltalk-proto-system
   (:use :cl)
+  (:shadow "CLASS")
   (:local-nicknames (:m :symbolic-smalltalk-methods))
-  (:export #:symbolic-smalltalk-generic-function
-           #:symbolic-smalltalk-class
+           ;; Clos metaclasses
+  (:export #:symbolic-smalltalk-class
            #:symbolic-smalltalk-metaclass
+           #:symbolic-smalltalk-generic-function
+
+           ;; Smalltalk classes
            #:proto-object
            #:object
            #:behavior
            #:class-description
            #:class
            #:metaclass
+
+           ;; "Message not understood" condition.
            #:message-not-understood
-           #:proto-selector-translation
            #:message
-           #:selector
+
+           ;; Translating selectors into symbols.
+           #:proto-selector-translation
+
+           ;; Definition macros
+           #:define-method
+           #:define-class-method
+           #:define-class
+
+           ;; Sending messages in Lisp
            #:send
            #:sendc
            #:cascade
-           #:define-method
-           #:define-class-method
-           #:define-class)
-  (:shadow "CLASS"))
+           #:selector))
 
 (in-package :symbolic-smalltalk-proto-system)
 
@@ -32,7 +48,7 @@
 ;; Binary: m::+/1 -> Object + foo
 ;; Keyword: m::do/and-then/2 -> Object :do foo :and-then bar
 
-;; Helper macro just to get the basics going.
+;; Helper macros just to get the basics going.
 
 (defmacro define-method% ((class name &rest parameters) &body body)
   (let ((actual-name (intern (string name) :symbolic-smalltalk-methods))
@@ -46,6 +62,21 @@
          (:generic-function-class symbolic-smalltalk-generic-function))
        (defmethod ,actual-name ((self ,class) ,@parameters)
          ,@body))))
+
+(defmacro define-smalltalk-class (name direct-superclasses direct-slots)
+  (let ((metaclass-name (metaclass-name name))
+        (metasuperclasses (if (null direct-superclasses)
+                              (list 'class)
+                              (mapcar #'metaclass-name direct-superclasses))))
+    `(progn
+       (defclass ,name ,direct-superclasses
+         ,direct-slots
+         (:metaclass symbolic-smalltalk-class))
+       (defclass ,metaclass-name ,metasuperclasses
+         ()
+         (:metaclass symbolic-smalltalk-metaclass))
+       (initialize-metaclass ',name)
+       (initialize-metaclass ',metaclass-name))))
 
 ;;; ====================================================================
 ;;;   Methods
@@ -99,10 +130,20 @@
 ;;;   Symbolic smalltalk class
 
 (defclass symbolic-smalltalk-class (standard-class)
-  (%metaclass-instance %this-class))
+  ;; The single instance of the metaclass for the
+  ;; class in question.
+  ((%metaclass-instance :initarg :metaclass-instance
+                        :accessor metaclass-instance
+                        :initform nil)
+   #+n
+   (%this-class :initarg :this-class
+                :accessor this-class
+                :initform nil)))
 
 (defclass symbolic-smalltalk-metaclass (symbolic-smalltalk-class)
-  ())
+  ((%this-class :initarg :this-class
+                :accessor this-class
+                :initform nil)))
 
 (defmethod c2cl:validate-superclass ((class symbolic-smalltalk-class)
                                      (superclass standard-class))
@@ -112,19 +153,51 @@
                                      (superclass symbolic-smalltalk-class))
   t)
 
-(define-method% (t m::class/0)
-  (class-of self))
+;; (define-method% (t m::class/0)
+;;   (class-of self))
+;;
+;; (define-method% (t m::this-class/0)
+;;   (slot-value self '%this-class))
+;;
+;; (define-method% (t m::this-class/1 class)
+;;   (setf (slot-value self '%this-class) class))
+;;
+;; (define-method% (t m::metaclass-instance/0)
+;;   (slot-value self '%metaclass-instance))
 
-(define-method% (t m::this-class/0)
-  (slot-value self '%this-class))
+#+n
+(defmethod create-metaclass-for-class ((self symbolic-smalltalk-class)
+                                       metaclass-name)
+  (let ((metaclass-instance (or (metaclass-instance self)
+                                (make-instance metaclass-name))))
+          ;; Smalltalk metaclass instance -> Lisp class.
+    (setf (behavior-class metaclass-instance) self
+          ;; Let the smalltalk metaclass instance know the name of the
+          ;; Smalltalk class (and also Lisp class). (Is this necessary?)
+          (class-description-name metaclass-instance) (class-name self)
+          ;; Lisp class -> Smalltalk metaclass instance.
+          (metaclass-instance self) metaclass-instance
+          ;; Smalltalk metaclass -> Smalltalk metaclass singleton instance.
+          (this-class (find-class metaclass-name)) metaclass-instance)
+    metaclass-instance))
 
-(define-method% (t m::this-class/1 class)
-  (setf (slot-value self '%this-class) class))
-
-(define-method% (t m::metaclass-instance/0)
-  (slot-value self '%metaclass-instance))
+#+n
+(defmethod create-metaclass-for-class ((self symbolic-smalltalk-metaclass)
+                                       metaclass-name)
+  (setf (metaclass-instance self) (the-class 'metaclass)))
 
 (define-method% (t m::metaclass/1 metaclass-name)
+  nil
+  #+n
+  (create-metaclass-for-class self metaclass-name)
+  #+n
+  (let ((metaclass-instance (make-instance metaclass-name)))
+    (setf (behavior-class metaclass-instance) self
+          (class-description-name metaclass-instance) (class-name self)
+          (metaclass-instance self) metaclass-instance
+          (this-class (find-class metaclass-name)) metaclass-instance)
+    metaclass-instance)
+  #+n
   (let ((metaclass-instance (make-instance metaclass-name)))
     (setf (slot-value metaclass-instance '%class) self)
     (setf (slot-value metaclass-instance 'name) (class-name self))
@@ -136,8 +209,27 @@
 (defun the-class (symbol)
   (let ((class (find-class symbol)))
     (if (typep class 'symbolic-smalltalk-class)
-        (slot-value (find-class symbol) '%metaclass-instance)
+        (metaclass-instance (find-class symbol))
         class)))
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defmethod metaclass-name ((smalltalk-class-name symbol))
+    (intern (format nil "~A CLASS" (string smalltalk-class-name))
+            (symbol-package smalltalk-class-name))))
+
+;; Set the metaclass instance.
+
+(defmethod initialize-metaclass ((smalltalk-class symbol))
+  (initialize-metaclass (find-class smalltalk-class)))
+
+(defmethod initialize-metaclass ((smalltalk-class symbolic-smalltalk-class))
+  (setf (metaclass-instance smalltalk-class)
+        (make-instance (find-class (metaclass-name (class-name smalltalk-class)))
+                       :behavior-class smalltalk-class)))
+
+(defmethod initialize-metaclass ((smalltalk-class symbolic-smalltalk-metaclass))
+  (setf (metaclass-instance smalltalk-class)
+        (make-instance 'metaclass :behavior-class smalltalk-class)))
 
 ;;; ====================================================================
 ;;;   Preliminary declarations
@@ -149,66 +241,52 @@
   (:metaclass symbolic-smalltalk-class))
 
 (defclass behavior (object)
-  (%class)
+  ((%class :initarg :behavior-class
+           :accessor behavior-class
+           :type symbolic-smalltalk-class))
   (:metaclass symbolic-smalltalk-class))
 
 (defclass class-description (behavior)
-  (name)
+  ((%name :initarg :class-description-name
+          :accessor class-description-name
+          :initform nil))
   (:metaclass symbolic-smalltalk-class))
 
-(defclass class (class-description) ()
+(defclass metaclass (class-description)
+  ()
   (:metaclass symbolic-smalltalk-class))
 
-(defclass metaclass (class-description) ()
+(defclass class (class-description)
+  ()
   (:metaclass symbolic-smalltalk-class))
 
 ;;; ====================================================================
 ;;;   Proto Object
 
-(defclass proto-object ()
-  ()
-  (:metaclass symbolic-smalltalk-class))
+(define-smalltalk-class proto-object () ())
 
-(defclass proto-object\ class (class)
-  ()
-  (:metaclass symbolic-smalltalk-metaclass))
-
-(m::metaclass/1 (find-class 'proto-object) 'proto-object\ class)
-(m::metaclass/1 (find-class 'proto-object\ class) 'metaclass)
-
-(define-method% (proto-object m::class/0)
-  (slot-value (class-of self) '%metaclass-instance))
-
-(define-method% (proto-object m::initialize/0)
-  self)
+;; Should return a metaclass instance.
+(defmethod class ((smalltalk-object proto-object))
+  (metaclass-instance (class-of smalltalk-object)))
 
 ;;; ====================================================================
 ;;;   Object
 
-(defclass object (proto-object)
-  ()
-  (:metaclass symbolic-smalltalk-class))
+(define-smalltalk-class object (proto-object) ())
 
-(defclass object\ class (class)
-  ()
-  (:metaclass symbolic-smalltalk-metaclass))
+(define-method% (object m::class/0)
+  (class self))
 
-(m::metaclass/1 (find-class 'object) 'object\ class)
-(m::metaclass/1 (find-class 'object\ class) 'metaclass)
+(define-method% (object m::initialize/0)
+  self)
 
 ;;; ====================================================================
 ;;;   Behavior
 
-(defclass behavior (object)
-  (%class)
-  (:metaclass symbolic-smalltalk-class))
-
-(defclass behavior\ class (object\ class)
-  ()
-  (:metaclass symbolic-smalltalk-metaclass))
-
-(m::metaclass/1 (find-class 'behavior) 'behavior\ class)
-(m::metaclass/1 (find-class 'behavior\ class) 'metaclass)
+(define-smalltalk-class behavior (object)
+  ((%class :initarg :behavior-class
+           :accessor behavior-class
+           :type symbolic-smalltalk-class)))
 
 (define-method% (behavior m::new/0)
   (m::initialize/0 (make-instance (slot-value self '%class))))
@@ -301,36 +379,22 @@
 ;;; ====================================================================
 ;;;   Class description
 
-(defclass class-description (behavior)
-  (name)
-  (:metaclass symbolic-smalltalk-class))
-
-(defclass class-description\ class (behavior\ class)
-  ()
-  (:metaclass symbolic-smalltalk-metaclass))
-
-(m::metaclass/1 (find-class 'class-description) 'class-description\ class)
-(m::metaclass/1 (find-class 'class-description\ class) 'metaclass)
+(define-smalltalk-class class-description (behavior)
+  ((%name :initarg :class-description-name
+          :accessor class-description-name
+          :initform nil)))
 
 (defmethod print-object ((self class-description) stream)
-  (if (slot-boundp self 'name)
-      (print-unreadable-object (self stream :type t)
-        (prin1 (slot-value self 'name) stream))
+  (if (class-description-name self)
+      (print-unreadable-object (self stream :type nil)
+        (prin1 (class-description-name self) stream)
+        (princ " CLASS (METACLASS INSTANCE)" stream))
       (call-next-method)))
 
 ;;; ====================================================================
 ;;;   Class
 
-(defclass class (class-description)
-  ()
-  (:metaclass symbolic-smalltalk-class))
-
-(defclass class\ class (class-description\ class)
-  ()
-  (:metaclass symbolic-smalltalk-metaclass))
-
-(m::metaclass/1 (find-class 'class) 'class\ class)
-(m::metaclass/1 (find-class 'class\ class) 'metaclass)
+(define-smalltalk-class class (class-description) ())
 
 (define-method% (class m::subclass/1 name)
   (m::subclass/instance-variable-names/class-variable-names/3
@@ -370,7 +434,7 @@
                   instance-variables))
          (lisp-class (closer-mop:ensure-class
                       name
-                      :direct-superclasses (list (slot-value self '%class))
+                      :direct-superclasses (list (behavior-class self))
                       :direct-slots (append instance-slots class-slots)
                       :metaclass (find-class 'symbolic-smalltalk-class))))
 
@@ -397,37 +461,20 @@
 ;;; ====================================================================
 ;;;   Metaclass
 
-(defclass metaclass (class-description)
-  ()
-  (:metaclass symbolic-smalltalk-class))
+(define-smalltalk-class metaclass (class-description) ())
 
-(defclass metaclass\ class (class-description\ class)
-  ()
-  (:metaclass symbolic-smalltalk-metaclass))
-
-(m::metaclass/1 (find-class 'metaclass) 'metaclass\ class)
-(m::metaclass/1 (find-class 'metaclass\ class) 'metaclass)
-
-;; Should this be a defun instead?
 (define-method% (metaclass\ class m::metaclass-name/1 class-name)
+  (intern (format nil "~A CLASS" (string class-name))
+          (symbol-package class-name))) ;; Was *package*
+
+(defun generic-metaclass-name (class-name)
   (intern (format nil "~A CLASS" (string class-name))
           (symbol-package class-name))) ;; Was *package*
 
 ;;; ====================================================================
 ;;;   Proto selector translation
 
-(defclass proto-selector-translation (object) ()
-  (:metaclass symbolic-smalltalk-class))
-
-(defclass proto-selector-translation\ class (object\ class)
-  ()
-  (:metaclass symbolic-smalltalk-metaclass))
-
-(m::metaclass/1 (find-class 'proto-selector-translation)
-                'proto-selector-translation\ class)
-
-(m::metaclass/1 (find-class 'proto-selector-translation\ class)
-                'metaclass)
+(define-smalltalk-class proto-selector-translation (object) ())
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defvar *binary-operators* "-,~!@%&*+/=<>?|\\"))
@@ -532,19 +579,8 @@
 ;;; ====================================================================
 ;;;   Message
 
-(defclass message\ class (object\ class)
-  ()
-  (:metaclass symbolic-smalltalk-metaclass))
-
-(defclass message (object)
-  (recipient selector arguments)
-  (:metaclass symbolic-smalltalk-class))
-
-(m::metaclass/1 (find-class 'message)
-                'message\ class)
-
-(m::metaclass/1 (find-class 'message\ class)
-                'metaclass)
+(define-smalltalk-class message (object)
+  (recipient selector arguments))
 
 (define-method% (message m::recipient/0)
   (slot-value self 'recipient))
@@ -575,11 +611,12 @@
          (function-name (m::translate-arglist/1 tr arguments))
          (parameters (m::extract-parameters-from-arglist/1 tr arguments))
          (self (intern "SELF" *package*))
-         (generic-parameters (loop :for p :in parameters
-                                   :for i :from 0
-                                   :collect (intern
-                                             (concatenate 'string "X" (princ-to-string i))
-                                             (find-package :symbolic-smalltalk.proto))))
+         (generic-parameters
+           (loop :for p :in parameters
+                 :for i :from 0
+                 :collect (intern
+                           (concatenate 'string "X" (princ-to-string i))
+                           (find-package :symbolic-smalltalk-proto-system))))
          (eql-specializer-p (and (consp type)
                                  (eq 'eql (car type))))
          (class-slots (when (and (not eql-specializer-p)
