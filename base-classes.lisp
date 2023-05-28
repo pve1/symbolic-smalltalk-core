@@ -144,6 +144,10 @@
 (define-smalltalk-class class-description (behavior)
   ())
 
+;;; Metaclass
+
+(define-smalltalk-class metaclass (class-description) ())
+
 ;;; Class
 
 (define-smalltalk-class class (class-description) ())
@@ -209,7 +213,3 @@
         :add-slot-accessor slot))
 
     (the-class name)))
-
-;;; Metaclass
-
-(define-smalltalk-class metaclass (class-description) ())
