@@ -1,4 +1,4 @@
-(asdf:defsystem #:symbolic-smalltalk-proto-system
+(asdf:defsystem #:symbolic-smalltalk-core
   :description "The Symbolic Smalltalk core system."
   :author "Peter von Etter"
   :license "LGPL-3.0"

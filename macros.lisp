@@ -1,4 +1,4 @@
-(in-package :symbolic-smalltalk-proto-system)
+(in-package :symbolic-smalltalk-core)
 
 ;; Helper macros just to get the basics going. These are *not* going to
 ;; be exported.

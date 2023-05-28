@@ -1,4 +1,4 @@
-(in-package :symbolic-smalltalk-proto-system)
+(in-package :symbolic-smalltalk-core)
 
 ;;; Symbolic smalltalk class
 

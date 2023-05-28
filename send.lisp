@@ -1,4 +1,4 @@
-(in-package :symbolic-smalltalk-proto-system)
+(in-package :symbolic-smalltalk-core)
 
 (defmacro send (recipient &body arguments)
   (translate-message recipient arguments))

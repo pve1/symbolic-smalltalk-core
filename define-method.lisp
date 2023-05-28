@@ -1,4 +1,4 @@
-(in-package :symbolic-smalltalk-proto-system)
+(in-package :symbolic-smalltalk-core)
 
 ;;; Define method
 
@@ -14,7 +14,7 @@
                  :for i :from 0
                  :collect (intern
                            (concatenate 'string "X" (princ-to-string i))
-                           (find-package :symbolic-smalltalk-proto-system))))
+                           (find-package :symbolic-smalltalk-core))))
          (eql-specializer-p (and (consp type)
                                  (eq 'eql (car type))))
          (class-slots (when (and (not eql-specializer-p)

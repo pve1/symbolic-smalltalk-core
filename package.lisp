@@ -5,7 +5,7 @@
 
 (defpackage :symbolic-smalltalk-methods (:use))
 
-(defpackage :symbolic-smalltalk-proto-system
+(defpackage :symbolic-smalltalk-core
   (:use :cl)
   (:shadow "CLASS")
   (:local-nicknames (:m :symbolic-smalltalk-methods))
