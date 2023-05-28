@@ -27,7 +27,8 @@
            #:message
 
            ;; Translating selectors into symbols.
-           #:proto-selector-translation
+           #:selector
+           #:translate-selector
 
            ;; Definition macros
            #:define-method
