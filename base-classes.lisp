@@ -28,6 +28,11 @@
 (defclass class (class-description) ()
   (:metaclass symbolic-smalltalk-class))
 
+;; This must come before the definition of proto-object, as its
+;; metaclass will receive "initialize".
+(define-smalltalk-method (object initialize)
+  self)
+
 ;;; Proto Object
 
 (define-smalltalk-class proto-object () ())
@@ -42,9 +47,6 @@
 
 (define-smalltalk-method (object class)
   (class self))
-
-(define-smalltalk-method (object initialize)
-  self)
 
 ;;; Behavior
 
