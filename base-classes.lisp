@@ -130,9 +130,25 @@
 
 (define-smalltalk-class metaclass (class-description) ())
 
+(defmethod print-object ((object metaclass) stream)
+  (print-unreadable-object (object stream)
+    (prin1 (class-name
+            (behavior-class
+             (this-metaclass-instance
+              (behavior-class object))))
+           stream)
+    (princ " METACLASS" stream))
+  object)
+
 ;;; Class
 
 (define-smalltalk-class class (class-description) ())
+
+(defmethod print-object ((object class) stream)
+  (print-unreadable-object (object stream)
+    (prin1 (class-name (behavior-class object)) stream)
+    (princ " CLASS" stream))
+  object)
 
 (define-smalltalk-method (class :subclass name)
   (send self
