@@ -156,34 +156,30 @@
     :instance-variable-names nil
     :class-variable-names nil))
 
+(defun read-variable-list (variables-string)
+  (with-input-from-string (s instance-variables)
+    (loop :for var = (read s nil s)
+          :until (eq var s)
+          :collect var)))
+
 (define-smalltalk-method (class :subclass name
                                 :instance-variable-names instance-variables
                                 :class-variable-names class-variables)
   (when (stringp instance-variables)
-    (setf instance-variables
-          (with-input-from-string (s instance-variables)
-            (loop :for var = (read s nil s)
-                  :until (eq var s)
-                  :collect var))))
-
+    (setf instance-variables (read-variable-list instance-variables)))
   (when (stringp class-variables)
-    (setf class-variables
-          (with-input-from-string (s class-variables)
-            (loop :for var = (read s nil s)
-                  :until (eq var s)
-                  :collect var))))
+    (setf class-variables (read-variable-list class-variables)))
 
   (let* ((initfunction (load-time-value (lambda () nil)))
          (class-slots (mapcar (lambda (x)
                                 (list :name x
                                       :initform nil
-                                      :initfunction initfunction
-                                      :allocation :class))
+                                      :initfunction initfunction))
                               class-variables))
          (metaclass (closer-mop:ensure-class
                      (metaclass-name name)
                      :direct-superclasses (list (class-of self))
-                     :direct-slots nil
+                     :direct-slots class-slots
                      :metaclass (find-class 'symbolic-smalltalk-metaclass)))
          (instance-slots
            (mapcar (lambda (x)
@@ -192,22 +188,10 @@
          (lisp-class (closer-mop:ensure-class
                       name
                       :direct-superclasses (list (behavior-class self))
-                      :direct-slots (append instance-slots class-slots)
+                      :direct-slots instance-slots
                       :metaclass (find-class 'symbolic-smalltalk-class))))
 
+    ;; Will send initialize to the metaclass-instance.
     (initialize-metaclass lisp-class)
     (initialize-metaclass metaclass)
-
-    (dolist (slot class-variables)
-      (send (metaclass-instance lisp-class)
-        :add-class-slot-accessor slot))
-
-    (dolist (slot class-variables)
-      (send (metaclass-instance lisp-class)
-        :add-slot-accessor slot))
-
-    (dolist (slot instance-variables)
-      (send (metaclass-instance lisp-class)
-        :add-slot-accessor slot))
-
     (the-class name)))
