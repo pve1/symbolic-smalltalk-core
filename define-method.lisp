@@ -32,9 +32,10 @@
                            (find-package :symbolic-smalltalk-core))))
          (lisp-class (class-name (behavior-class (the-class type)))))
     `(progn
-       (handler-bind ((warning #'muffle-warning))
-         (defgeneric ,function-name (self ,@generic-parameters)
-           (:generic-function-class symbolic-smalltalk-generic-function)))
+       (eval-when (:compile-toplevel :load-toplevel :execute)
+         (handler-bind ((warning #'muffle-warning))
+           (defgeneric ,function-name (self ,@generic-parameters)
+             (:generic-function-class symbolic-smalltalk-generic-function))))
        (with-class-variables (,self ,lisp-class)
          (with-instance-variables (,self ,lisp-class)
            (defmethod ,function-name ((,self ,lisp-class) ,@parameters)
@@ -51,9 +52,10 @@
                            (concatenate 'string "X" (princ-to-string i))
                            (find-package :symbolic-smalltalk-core)))))
     `(progn
-       (handler-bind ((warning #'muffle-warning))
-         (defgeneric ,function-name (self ,@generic-parameters)
-           (:generic-function-class symbolic-smalltalk-generic-function)))
+       (eval-when (:compile-toplevel :load-toplevel :execute)
+         (handler-bind ((warning #'muffle-warning))
+           (defgeneric ,function-name (self ,@generic-parameters)
+             (:generic-function-class symbolic-smalltalk-generic-function))))
        (defmethod ,function-name ((,self ,type) ,@parameters)
          ,@body))))
 
