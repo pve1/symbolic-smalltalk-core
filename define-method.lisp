@@ -32,8 +32,9 @@
                            (find-package :symbolic-smalltalk-core))))
          (lisp-class (class-name (behavior-class (the-class type)))))
     `(progn
-       (defgeneric ,function-name (self ,@generic-parameters)
-         (:generic-function-class symbolic-smalltalk-generic-function))
+       (handler-bind ((warning #'muffle-warning))
+         (defgeneric ,function-name (self ,@generic-parameters)
+           (:generic-function-class symbolic-smalltalk-generic-function)))
        (with-class-variables (,self ,lisp-class)
          (with-instance-variables (,self ,lisp-class)
            (defmethod ,function-name ((,self ,lisp-class) ,@parameters)
@@ -50,10 +51,18 @@
                            (concatenate 'string "X" (princ-to-string i))
                            (find-package :symbolic-smalltalk-core)))))
     `(progn
-       (defgeneric ,function-name (self ,@generic-parameters)
-         (:generic-function-class symbolic-smalltalk-generic-function))
+       (handler-bind ((warning #'muffle-warning))
+         (defgeneric ,function-name (self ,@generic-parameters)
+           (:generic-function-class symbolic-smalltalk-generic-function)))
        (defmethod ,function-name ((,self ,type) ,@parameters)
          ,@body))))
+
+(defmacro define-method ((type &rest arguments) &body body)
+  (cond ((and (symbolp type)
+              (typep (find-class type) 'symbolic-smalltalk-class))
+         (make-smalltalk-define-method-form type arguments body))
+        (t
+         (make-standard-define-method-form type arguments body))))
 
 (defmacro define-class-method ((type &rest arguments) &body body)
   (let ((metaclass-name (if (typep (find-class type) 'symbolic-smalltalk-class)
