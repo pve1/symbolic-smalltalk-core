@@ -42,6 +42,6 @@
     (setf (metaclass-instance smalltalk-class) metaclass-instance
           (this-metaclass-instance metaclass-class) metaclass-instance)))
 
-(defmethod initialize-metaclass ((smalltalk-class symbolic-smalltalk-metaclass))
-  (setf (metaclass-instance smalltalk-class)
-        (make-instance 'metaclass :behavior-class smalltalk-class)))
+(defmethod initialize-metaclass ((smalltalk-metaclass symbolic-smalltalk-metaclass))
+  (setf (metaclass-instance smalltalk-metaclass)
+        (make-instance 'metaclass :behavior-class smalltalk-metaclass)))
