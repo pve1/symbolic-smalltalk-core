@@ -160,7 +160,7 @@
     :class-variable-names nil))
 
 (defun read-variable-list (variables-string)
-  (with-input-from-string (s instance-variables)
+  (with-input-from-string (s variables-string)
     (loop :for var = (read s nil s)
           :until (eq var s)
           :collect var)))
