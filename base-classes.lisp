@@ -119,26 +119,6 @@
                       (setf (slot-value self ',slot-name) ,value)
                       self))))
 
-(define-smalltalk-method (behavior :add-class-slot-accessor slot-name)
-  (let ((value (gensym)))
-    (send self
-      :add-selector slot-name
-      :with-lambda `(lambda (self)
-                      (slot-value
-                       (closer-mop:class-prototype
-                        (behavior-class self))
-                       ',slot-name)))
-    (send self
-      :add-selector (list (intern (string slot-name) :keyword))
-      :with-lambda `(lambda (self ,value)
-                      (setf
-                       (slot-value
-                        (closer-mop:class-prototype
-                         (behavior-class self))
-                        ',slot-name)
-                       ,value)
-                      self))))
-
 ;;; Class description
 
 (define-smalltalk-class class-description (behavior)
