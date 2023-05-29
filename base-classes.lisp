@@ -29,7 +29,7 @@
   (:metaclass symbolic-smalltalk-class))
 
 ;; This must come before the definition of proto-object, as its
-;; metaclass will receive "initialize".
+;; metaclass (a subclass of object) will receive "initialize".
 (define-smalltalk-method (object initialize)
   self)
 
@@ -79,6 +79,9 @@
           :collect (closer-mop:slot-definition-name slot-definition)))
 
 ;; No variable access.
+
+;; Object class :add-selector '(:x x :y y)
+;;              :with-lambda '(lambda (x y) ...)
 
 (define-smalltalk-method (behavior :add-selector selector
                                    :with-lambda lambda-form)
