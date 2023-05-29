@@ -38,7 +38,7 @@
          (metaclass-class (find-class metaclass-name))
          (metaclass-instance (make-instance metaclass-class
                                             :behavior-class smalltalk-class)))
-
+    (send metaclass-instance initialize)
     (setf (metaclass-instance smalltalk-class) metaclass-instance
           (this-metaclass-instance metaclass-class) metaclass-instance)))
 
