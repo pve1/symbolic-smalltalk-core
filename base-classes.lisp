@@ -71,9 +71,9 @@
 
 (define-smalltalk-method (behavior class-variables)
   (loop :for slot-definition :in (closer-mop:class-direct-slots
-                                  (behavior-class self))
-        :when (eq :class (closer-mop:slot-definition-allocation
-                          slot-definition))
+                                  (class-of self))
+        :when (eq :instance (closer-mop:slot-definition-allocation
+                             slot-definition))
           :collect (closer-mop:slot-definition-name slot-definition)))
 
 ;; No variable access.
