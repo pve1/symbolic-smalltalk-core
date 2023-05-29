@@ -44,10 +44,11 @@
 
 (defmethod no-applicable-method ((self symbolic-smalltalk-generic-function) &rest args)
   (if (find-class 'message nil)
-      (m::does-not-understand/1 (first args)
-                                (let ((message (m::new/0 (the-class 'message))))
-                                  (m::recipient/1 message (first args))
-                                  (m::arguments/1 message (rest args))
-                                  (m::selector/1 message (closer-mop:generic-function-name self))
-                                  message))
+      (send (first args)
+        :does-not-understand
+        (let ((message (send (the-class 'message) new)))
+          (setf (message-recipient message) (first args)
+                (message-arguments message) (rest args)
+                (message-selector message) (closer-mop:generic-function-name self))
+          message))
       (error "~S cannot understand ~S." args self)))
