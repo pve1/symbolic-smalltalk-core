@@ -10,6 +10,8 @@
                        :initform nil)))
 
 (defclass symbolic-smalltalk-metaclass (symbolic-smalltalk-class)
+  ;; The same single instance as above, but accessed through the
+  ;; metaclass.
   ((this-metaclass-instance :initarg :this-metaclass-instance
                             :accessor this-metaclass-instance
                             :initform nil)))
