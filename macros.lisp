@@ -3,6 +3,9 @@
 ;; Helper macros just to get the basics going. These are *not* going to
 ;; be exported.
 
+(defun self ()
+  (intern "SELF" *package*))
+
 (defmacro define-smalltalk-method ((class &rest parameters) &body body)
   (let* ((actual-name (translate-arglist parameters))
          (actual-parameters (extract-parameters-from-arglist parameters))
@@ -11,9 +14,9 @@
                  :for k :from 0
                  :collect (intern (format nil "X~A" k) *package*))))
     `(progn
-       (defgeneric ,actual-name (self ,@parameter-list)
+       (defgeneric ,actual-name (,(self) ,@parameter-list)
          (:generic-function-class symbolic-smalltalk-generic-function))
-       (defmethod ,actual-name ((self ,class) ,@actual-parameters)
+       (defmethod ,actual-name ((,(self) ,class) ,@actual-parameters)
          ,@body))))
 
 (defmethod metaclass-name ((smalltalk-class-name symbol))
