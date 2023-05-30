@@ -32,5 +32,4 @@
        (defclass ,metaclass-name ,metasuperclasses
          ()
          (:metaclass symbolic-smalltalk-metaclass))
-       (initialize-metaclass ',name)
-       (initialize-metaclass ',metaclass-name))))
+       (initialize-class ',name))))

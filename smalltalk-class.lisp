@@ -47,3 +47,7 @@
 (defmethod initialize-metaclass ((smalltalk-metaclass symbolic-smalltalk-metaclass))
   (setf (metaclass-instance smalltalk-metaclass)
         (make-instance 'metaclass :behavior-class smalltalk-metaclass)))
+
+(defmethod initialize-class ((class-name symbol))
+  (initialize-metaclass class-name)
+  (initialize-metaclass (metaclass-name class-name)))
