@@ -47,52 +47,52 @@
     (:binary (intern-binary-selector selector))
     (:unary (intern-unary-selector selector))))
 
-(defun classify-arglist (arglist)
-  (let ((len (length arglist)))
-    (cond ((keywordp (first arglist)) ;; keyword
+(defun classify-message (message)
+  (let ((len (length message)))
+    (cond ((keywordp (first message)) ;; keyword
            (assert (evenp len))
            :keyword)
           ((and (= 2 len) ;; + other
                 (every (lambda (c)
                          (find c #.*binary-operators*))
-                       (string (first arglist))))
+                       (string (first message))))
            :binary)
           ((and (= 1 len)
-                (symbolp (first arglist)))
+                (symbolp (first message)))
            :unary)
           (t :invalid))))
 
-(defun translate-arglist (arglist)
-  (ecase (classify-arglist arglist)
+(defun translate-message (message)
+  (ecase (classify-message message)
     (:keyword
      (intern-keyword-selector
-      (loop :for (keyword value) :on arglist :by #'cddr
+      (loop :for (keyword value) :on message :by #'cddr
             :do (assert (keywordp keyword))
             :collect (symbol-name keyword))))
-    (:binary (intern-binary-selector (string (first arglist))))
-    (:unary (intern-unary-selector (first arglist)))))
+    (:binary (intern-binary-selector (string (first message))))
+    (:unary (intern-unary-selector (first message)))))
 
-(defun extract-parameters-from-arglist (arglist)
-  (ecase (classify-arglist arglist)
+(defun extract-parameters-from-message (message)
+  (ecase (classify-message message)
     (:keyword
-     (loop :for (keyword value) :on arglist :by #'cddr
+     (loop :for (keyword value) :on message :by #'cddr
            :do (assert (keywordp keyword))
            :collect value))
-    (:binary (rest arglist))
+    (:binary (rest message))
     (:unary nil)))
 
-(defun arglist-to-selector (arglist)
-  (ecase (classify-arglist arglist)
+(defun extract-selector-from-message (message)
+  (ecase (classify-message message)
     (:keyword
-     (loop :for (keyword value) :on arglist :by #'cddr
+     (loop :for (keyword value) :on message :by #'cddr
            :do (assert (keywordp keyword))
            :collect keyword))
-    (:binary (first arglist))
-    (:unary (first arglist))))
+    (:binary (first message))
+    (:unary (first message))))
 
-(defun translate-message (recipient arguments)
-  (let ((selector-symbol (translate-arglist arguments))
-        (parameters (extract-parameters-from-arglist arguments)))
+(defun translate-send (recipient message)
+  (let ((selector-symbol (translate-message message))
+        (parameters (extract-parameters-from-message message)))
     `(,selector-symbol ,recipient ,@parameters)))
 
 (defmacro selector (name)

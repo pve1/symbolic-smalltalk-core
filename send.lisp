@@ -1,10 +1,10 @@
 (in-package :symbolic-smalltalk-core)
 
-(defmacro send (recipient &body arguments)
-  (translate-message recipient arguments))
+(defmacro send (recipient &body message)
+  (translate-send recipient message))
 
-(defmacro send-class (recipient &body arguments)
-  (translate-message `(the-class ,recipient) arguments))
+(defmacro send-class (recipient &body message)
+  (translate-send `(the-class ,recipient) message))
 
 (defmacro cascade (recipient &body messages)
   (let* ((r (gensym))

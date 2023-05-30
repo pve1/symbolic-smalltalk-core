@@ -7,8 +7,8 @@
   (intern "SELF" *package*))
 
 (defmacro define-smalltalk-method ((class &rest parameters) &body body)
-  (let* ((actual-name (translate-arglist parameters))
-         (actual-parameters (extract-parameters-from-arglist parameters))
+  (let* ((actual-name (translate-message parameters))
+         (actual-parameters (extract-parameters-from-message parameters))
          (parameter-list
            (loop :for i :in actual-parameters
                  :for k :from 0
