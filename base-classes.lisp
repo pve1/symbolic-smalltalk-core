@@ -61,7 +61,7 @@
 (define-smalltalk-method (behavior basic-new)
   (make-instance (behavior-class self)))
 
-(define-smalltalk-method (behavior instance-variables)
+(defmethod instance-variables ((self behavior))
   (loop :for slot-definition :in (closer-mop:class-direct-slots
                                   (behavior-class self))
         :when (and (eq :instance (closer-mop:slot-definition-allocation
@@ -71,48 +71,77 @@
                             '%array)))
           :collect (closer-mop:slot-definition-name slot-definition)))
 
-(define-smalltalk-method (behavior class-variables)
+(defmethod class-variables ((self behavior))
   (loop :for slot-definition :in (closer-mop:class-direct-slots
                                   (class-of self))
         :when (eq :instance (closer-mop:slot-definition-allocation
                              slot-definition))
           :collect (closer-mop:slot-definition-name slot-definition)))
 
-;; No variable access.
+(define-smalltalk-method (behavior instance-variables)
+  (instance-variables self))
+
+(define-smalltalk-method (behavior class-variables)
+  (class-variables self))
 
 ;; Object class :add-selector '(:x x :y y)
 ;;              :with-lambda '(lambda (x y) ...)
 
-(define-smalltalk-method (behavior :add-selector selector
-                                   :with-lambda lambda-form)
+(defun selector-specializers (class selector)
+  (case (classify-selector selector)
+    (:unary (list class))
+    (:binary (list class (find-class t)))
+    (:keyword (list* class (loop :for i :from 0 :below (length selector)
+                                 :collect (find-class t))))))
+
+(defmethod add-method-to-class ((self behavior) selector lambda-form)
   (assert (eq 'lambda (first lambda-form)))
   (let* ((selector-symbol (translate-selector selector))
          (gf (closer-mop:ensure-generic-function
               selector-symbol
               :generic-function-class 'symbolic-smalltalk-generic-function
               :lambda-list (second lambda-form)))
-         (specializers (case (classify-selector selector)
-                         (:unary (list (behavior-class self)))
-                         (:binary (list (behavior-class self)
-                                        (find-class t)))
-                         (:keyword (list* (behavior-class self)
-                                          (loop :for i :from 0 :below (length selector)
-                                                :collect (find-class t)))))))
+         (specializers (selector-specializers (behavior-class self) selector))
+         (the-self (first (second lambda-form))))
+    (assert (string= "SELF" the-self))
     (multiple-value-bind (method-lambda initargs)
         (closer-mop:make-method-lambda gf
                                        (closer-mop:class-prototype
                                         (closer-mop:generic-function-method-class gf))
-                                       lambda-form nil)
-      (add-method gf (apply #'make-instance
-                            (closer-mop:generic-function-method-class gf)
-                            :specializers specializers
-                            :lambda-list (second lambda-form)
-                            :function (compile nil method-lambda)
-                            initargs)))))
+                                       lambda-form
+                                       nil)
+      (let ((final-lambda-expression
+              `(lambda ()
+                 (with-class-variables (,the-self ,(class-name (behavior-class self)))
+                   (with-instance-variables (,the-self ,(class-name (behavior-class self)))
+                     ,method-lambda)))))
+
+        (add-method gf (apply #'make-instance
+                              (closer-mop:generic-function-method-class gf)
+                              :specializers specializers
+                              :lambda-list (second lambda-form)
+                              :function (funcall (compile nil final-lambda-expression))
+                              initargs))))))
+
+(defmethod remove-method-from-class ((self behavior) selector)
+  (let* ((selector-symbol (translate-selector selector))
+         (gf (fdefinition selector-symbol))
+         (method (find-method gf
+                              nil
+                              (selector-specializers (behavior-class self)
+                                                     selector))))
+    (remove-method gf method)))
+
+(define-smalltalk-method (behavior :add-selector selector
+                                   :with-lambda lambda-form)
+  (add-method-to-class self selector lambda-form))
+
+(define-smalltalk-method (behavior :remove-selector selector)
+  (remove-method-from-class self selector))
 
 ;; Todo: Investigate using STANDARD-INSTANCE-ACCESS.
 
-(define-smalltalk-method (behavior :add-slot-accessor slot-name)
+(defmethod add-slot-accessor ((self behavior) slot-name)
   (let ((value (gensym)))
     (send self
       :add-selector slot-name
@@ -123,6 +152,10 @@
       :with-lambda `(lambda (self ,value)
                       (setf (slot-value self ',slot-name) ,value)
                       self))))
+
+(define-smalltalk-method (behavior :add-slot-accessor slot-name)
+  (add-slot-accessor self slot-name))
+
 
 ;;; Class description
 
@@ -153,21 +186,13 @@
     (princ " CLASS" stream))
   object)
 
-(define-smalltalk-method (class :subclass name)
-  (send self
-    :subclass name
-    :instance-variable-names nil
-    :class-variable-names nil))
-
 (defun read-variable-list (variables-string)
   (with-input-from-string (s variables-string)
     (loop :for var = (read s nil s)
           :until (eq var s)
           :collect var)))
 
-(define-smalltalk-method (class :subclass name
-                                :instance-variable-names instance-variables
-                                :class-variable-names class-variables)
+(defmethod subclass ((self class) name &key instance-variables class-variables)
   (when (stringp instance-variables)
     (setf instance-variables (read-variable-list instance-variables)))
   (when (stringp class-variables)
@@ -198,3 +223,13 @@
     (initialize-metaclass lisp-class)
     (initialize-metaclass metaclass)
     (the-class name)))
+
+(define-smalltalk-method (class :subclass name)
+  (subclass self name))
+
+(define-smalltalk-method (class :subclass name
+                                :instance-variable-names instance-variables
+                                :class-variable-names class-variables)
+  (subclass self name
+            :instance-variables instance-variables
+            :class-variables class-variables))
