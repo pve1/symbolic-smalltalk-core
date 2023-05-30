@@ -37,6 +37,6 @@
 
            ;; Sending messages in Lisp
            #:send
-           #:sendc
+           #:send-class
            #:cascade
            #:selector))

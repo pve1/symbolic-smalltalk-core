@@ -3,8 +3,8 @@
 (defmacro send (recipient &body arguments)
   (translate-message recipient arguments))
 
-(defmacro sendc (recipient &body arguments)
-  (translate-message `(the-class ',recipient) arguments))
+(defmacro send-class (recipient &body arguments)
+  (translate-message `(the-class ,recipient) arguments))
 
 (defmacro cascade (recipient &body messages)
   (let* ((r (gensym))
