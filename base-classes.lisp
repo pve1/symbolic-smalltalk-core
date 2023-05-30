@@ -147,6 +147,19 @@
                                                      selector))))
     (remove-method gf method)))
 
+;; (add-selector-to-class (the-class 'object)
+;;                        '(:foo x :bar y)
+;;                        '((print x) (list x y)))
+(defmethod add-selector-to-class ((class behavior) method-header body
+                                  &key (self (self)))
+  (setf method-header (alexandria:ensure-list method-header))
+  (let ((parameters (extract-parameters-from-message method-header))
+        (selector (extract-selector-from-message method-header)))
+    (add-method-to-class class
+                         selector
+                         `(lambda (,self ,@parameters)
+                            ,@body))))
+
 (define-smalltalk-method (behavior :add-selector selector
                                    :with-lambda lambda-form)
   (add-method-to-class self selector lambda-form))
