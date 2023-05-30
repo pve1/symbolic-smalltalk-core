@@ -22,6 +22,14 @@
            #:class
            #:metaclass
 
+           #:instance-variables
+           #:class-variables
+           #:add-method-to-class
+           #:remove-method-from-class
+           #:add-slot-accessor
+           #:subclass
+           #:the-class
+
            ;; "Message not understood" condition.
            #:message-not-understood
            #:message
