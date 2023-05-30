@@ -37,15 +37,24 @@
                      (message-not-understood-recipient c)
                      (message-selector (message-not-understood-message c))))))
 
-(define-smalltalk-method (t :does-not-understand message)
+(defmethod does-not-understand (self message)
+  (error 'message-not-understood
+         :recipient self
+         :message message))
+
+(defmethod does-not-understand ((self object) message)
+  (send self :does-not-understand message))
+
+(define-smalltalk-method (object :does-not-understand message)
   (error 'message-not-understood
          :recipient self
          :message message))
 
 (defmethod no-applicable-method ((self symbolic-smalltalk-generic-function) &rest args)
   (if (find-class 'message nil)
-      (send (first args) :does-not-understand
-        (make-instance 'message :recipient (first args)
-                                :arguments (rest args)
-                                :selector (closer-mop:generic-function-name self)))
+      (does-not-understand
+       (first args)
+       (make-instance 'message :recipient (first args)
+                               :arguments (rest args)
+                               :selector (closer-mop:generic-function-name self)))
       (error "~S cannot understand ~S." args self)))
