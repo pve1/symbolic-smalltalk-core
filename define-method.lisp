@@ -5,56 +5,32 @@
 ;; Todo: Investigate using STANDARD-INSTANCE-ACCESS for slot
 ;; macrolets.
 
-(defmacro with-instance-variables ((self class) &body body)
-  (let ((inst-vars (send (the-class class) instance-variables)))
-    `(symbol-macrolet ,(mapcar (lambda (slot)
-                                 `(,slot (slot-value ,self ',slot)))
-                        inst-vars)
-       ,@body)))
-
-(defmacro with-class-variables ((self class) &body body)
-  (let ((class-vars (send (the-class class) class-variables)))
-    `(symbol-macrolet
-         ,(mapcar (lambda (slot)
-                    `(,slot (slot-value (class ,self) ',slot)))
-           class-vars)
-       ,@body)))
+(defun generate-defgeneric-parameters (n &optional (package :symbolic-smalltalk-methods))
+  (loop :for i :from 0 :below n
+        :collect (intern
+                  (concatenate 'string "X" (princ-to-string i))
+                  (find-package package))))
 
 (defun make-smalltalk-define-method-form (type arguments body)
-  (let* ((function-name (translate-arglist arguments))
-         (parameters (extract-parameters-from-arglist arguments))
-         (self (intern "SELF" *package*))
-         (generic-parameters
-           (loop :for p :in parameters
-                 :for i :from 0
-                 :collect (intern
-                           (concatenate 'string "X" (princ-to-string i))
-                           (find-package :symbolic-smalltalk-core))))
-         (lisp-class (class-name (behavior-class (the-class type)))))
-    `(progn
-       (eval-when (:compile-toplevel :load-toplevel :execute)
-         (handler-bind ((warning #'muffle-warning))
-           (defgeneric ,function-name (self ,@generic-parameters)
-             (:generic-function-class symbolic-smalltalk-generic-function))))
-       (with-class-variables (,self ,lisp-class)
-         (with-instance-variables (,self ,lisp-class)
-           (defmethod ,function-name ((,self ,lisp-class) ,@parameters)
-             ,@body))))))
+  (let* ((parameters (extract-parameters-from-arglist arguments))
+         (self (self))
+         (lambda-form `(lambda (,self ,@parameters)
+                         ,@body)))
+    `(eval-when (:compile-toplevel :load-toplevel :execute)
+       (add-method-to-class (the-class ',type)
+                            ',(arglist-to-selector arguments)
+                            ',lambda-form))))
 
 (defun make-standard-define-method-form (type arguments body)
   (let* ((function-name (translate-arglist arguments))
          (parameters (extract-parameters-from-arglist arguments))
-         (self (intern "SELF" *package*))
+         (self (self))
          (generic-parameters
-           (loop :for p :in parameters
-                 :for i :from 0
-                 :collect (intern
-                           (concatenate 'string "X" (princ-to-string i))
-                           (find-package :symbolic-smalltalk-core)))))
+           (generate-defgeneric-parameters (length parameters))))
     `(progn
        (eval-when (:compile-toplevel :load-toplevel :execute)
          (handler-bind ((warning #'muffle-warning))
-           (defgeneric ,function-name (self ,@generic-parameters)
+           (defgeneric ,function-name (,self ,@generic-parameters)
              (:generic-function-class symbolic-smalltalk-generic-function))))
        (defmethod ,function-name ((,self ,type) ,@parameters)
          ,@body))))

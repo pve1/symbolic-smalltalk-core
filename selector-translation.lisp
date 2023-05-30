@@ -81,6 +81,15 @@
     (:binary (rest arglist))
     (:unary nil)))
 
+(defun arglist-to-selector (arglist)
+  (ecase (classify-arglist arglist)
+    (:keyword
+     (loop :for (keyword value) :on arglist :by #'cddr
+           :do (assert (keywordp keyword))
+           :collect keyword))
+    (:binary (first arglist))
+    (:unary (first arglist))))
+
 (defun translate-message (recipient arguments)
   (let ((selector-symbol (translate-arglist arguments))
         (parameters (extract-parameters-from-arglist arguments)))

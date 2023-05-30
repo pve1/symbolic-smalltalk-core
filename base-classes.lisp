@@ -94,14 +94,30 @@
     (:keyword (list* class (loop :for i :from 0 :below (length selector)
                                  :collect (find-class t))))))
 
-(defmethod add-method-to-class ((self behavior) selector lambda-form)
+;; CLASS is a symbol that names a class.
+(defmacro with-instance-variables ((self class) &body body)
+  (let ((inst-vars (send (the-class class) instance-variables)))
+    `(symbol-macrolet ,(mapcar (lambda (slot)
+                                 `(,slot (slot-value ,self ',slot)))
+                        inst-vars)
+       ,@body)))
+
+(defmacro with-class-variables ((self class) &body body)
+  (let ((class-vars (send (the-class class) class-variables)))
+    `(symbol-macrolet
+         ,(mapcar (lambda (slot)
+                    `(,slot (slot-value (class ,self) ',slot)))
+           class-vars)
+       ,@body)))
+
+(defmethod add-method-to-class ((class behavior) selector lambda-form)
   (assert (eq 'lambda (first lambda-form)))
   (let* ((selector-symbol (translate-selector selector))
          (gf (closer-mop:ensure-generic-function
               selector-symbol
               :generic-function-class 'symbolic-smalltalk-generic-function
               :lambda-list (second lambda-form)))
-         (specializers (selector-specializers (behavior-class self) selector))
+         (specializers (selector-specializers (behavior-class class) selector))
          (the-self (first (second lambda-form))))
     (assert (string= "SELF" the-self))
     (multiple-value-bind (method-lambda initargs)
@@ -112,10 +128,9 @@
                                        nil)
       (let ((final-lambda-expression
               `(lambda ()
-                 (with-class-variables (,the-self ,(class-name (behavior-class self)))
-                   (with-instance-variables (,the-self ,(class-name (behavior-class self)))
+                 (with-class-variables (,the-self ,(class-name (behavior-class class)))
+                   (with-instance-variables (,the-self ,(class-name (behavior-class class)))
                      ,method-lambda)))))
-
         (add-method gf (apply #'make-instance
                               (closer-mop:generic-function-method-class gf)
                               :specializers specializers
