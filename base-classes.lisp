@@ -84,9 +84,6 @@
 (define-smalltalk-method (behavior class-variables)
   (class-variables self))
 
-;; Object class :add-selector '(:x x :y y)
-;;              :with-lambda '(lambda (x y) ...)
-
 (defun selector-specializers (class selector)
   (case (classify-selector selector)
     (:unary (list class))
@@ -109,6 +106,10 @@
                     `(,slot (slot-value (class ,self) ',slot)))
            class-vars)
        ,@body)))
+
+;; (add-selector-to-class (the-class 'object)
+;;                        '(:foo x :bar y)
+;;                        '(lambda (self x y) ...))
 
 (defmethod add-method-to-class ((class behavior) selector lambda-form)
   (assert (eq 'lambda (first lambda-form)))
@@ -150,6 +151,7 @@
 ;; (add-selector-to-class (the-class 'object)
 ;;                        '(:foo x :bar y)
 ;;                        '((print x) (list x y)))
+
 (defmethod add-selector-to-class ((class behavior) method-header body
                                   &key (self (self)))
   (setf method-header (alexandria:ensure-list method-header))
@@ -159,6 +161,9 @@
                          selector
                          `(lambda (,self ,@parameters)
                             ,@body))))
+
+;; Object class :add-selector '(:x x :y y)
+;;              :with-lambda '(lambda (self x y) ...)
 
 (define-smalltalk-method (behavior :add-selector selector
                                    :with-lambda lambda-form)
