@@ -22,17 +22,23 @@
            #:class
            #:metaclass
 
+           #:new
+           #:basic-new
            #:instance-variables
            #:class-variables
            #:add-method-to-class
            #:remove-method-from-class
+           #:add-selector-to-class
            #:add-slot-accessor
            #:subclass
            #:the-class
 
            ;; "Message not understood" condition.
-           #:message-not-understood
            #:message
+           #:message-recipient
+           #:message-selector
+           #:message-arguments
+           #:message-not-understood
 
            ;; Translating selectors into symbols.
            #:selector

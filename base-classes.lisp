@@ -45,9 +45,6 @@
 
 (define-smalltalk-class object (proto-object) ())
 
-(define-smalltalk-method (object class)
-  (class self))
-
 ;;; Behavior
 
 (define-smalltalk-class behavior (object)
@@ -55,11 +52,11 @@
                    :accessor behavior-class
                    :type symbolic-smalltalk-class)))
 
-(define-smalltalk-method (behavior new)
-  (send (make-instance (behavior-class self)) initialize))
+(defmethod new ((behavior behavior))
+  (send (make-instance (behavior-class behavior)) initialize))
 
-(define-smalltalk-method (behavior basic-new)
-  (make-instance (behavior-class self)))
+(defmethod basic-new ((behavior behavior))
+  (allocate-instance (behavior-class behavior)))
 
 (defmethod instance-variables ((self behavior))
   (loop :for slot-definition :in (closer-mop:class-direct-slots
@@ -78,12 +75,6 @@
                              slot-definition))
           :collect (closer-mop:slot-definition-name slot-definition)))
 
-(define-smalltalk-method (behavior instance-variables)
-  (instance-variables self))
-
-(define-smalltalk-method (behavior class-variables)
-  (class-variables self))
-
 (defun selector-specializers (class selector)
   (case (classify-selector selector)
     (:unary (list class))
@@ -93,14 +84,14 @@
 
 ;; CLASS is a symbol that names a class.
 (defmacro with-instance-variables ((self class) &body body)
-  (let ((inst-vars (send (the-class class) instance-variables)))
+  (let ((inst-vars (instance-variables (the-class class))))
     `(symbol-macrolet ,(mapcar (lambda (slot)
                                  `(,slot (slot-value ,self ',slot)))
                         inst-vars)
        ,@body)))
 
 (defmacro with-class-variables ((self class) &body body)
-  (let ((class-vars (send (the-class class) class-variables)))
+  (let ((class-vars (class-variables (the-class class))))
     `(symbol-macrolet
          ,(mapcar (lambda (slot)
                     `(,slot (slot-value (class ,self) ',slot)))
@@ -162,33 +153,19 @@
                          `(lambda (,self ,@parameters)
                             ,@body))))
 
-;; Object class :add-selector '(:x x :y y)
-;;              :with-lambda '(lambda (self x y) ...)
-
-(define-smalltalk-method (behavior :add-selector selector
-                                   :with-lambda lambda-form)
-  (add-method-to-class self selector lambda-form))
-
-(define-smalltalk-method (behavior :remove-selector selector)
-  (remove-method-from-class self selector))
-
 ;; Todo: Investigate using STANDARD-INSTANCE-ACCESS.
 
 (defmethod add-slot-accessor ((self behavior) slot-name)
   (let ((value (gensym)))
-    (send self
-      :add-selector slot-name
-      :with-lambda `(lambda (self)
-                      (slot-value self ',slot-name)))
-    (send self
-      :add-selector (list (intern (string slot-name) :keyword))
-      :with-lambda `(lambda (self ,value)
-                      (setf (slot-value self ',slot-name) ,value)
-                      self))))
-
-(define-smalltalk-method (behavior :add-slot-accessor slot-name)
-  (add-slot-accessor self slot-name))
-
+    (add-method-to-class self
+                         slot-name
+                         `(lambda (self)
+                            (slot-value self ',slot-name)))
+    (add-method-to-class self
+                         (list (intern (string slot-name) :keyword))
+                         `(lambda (self ,value)
+                            (setf (slot-value self ',slot-name) ,value)
+                            self))))
 
 ;;; Class description
 
@@ -256,13 +233,3 @@
     (initialize-metaclass lisp-class)
     (initialize-metaclass metaclass)
     (the-class name)))
-
-(define-smalltalk-method (class :subclass name)
-  (subclass self name))
-
-(define-smalltalk-method (class :subclass name
-                                :instance-variable-names instance-variables
-                                :class-variable-names class-variables)
-  (subclass self name
-            :instance-variables instance-variables
-            :class-variables class-variables))

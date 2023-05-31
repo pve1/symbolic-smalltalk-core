@@ -7,24 +7,6 @@
    (selector :initarg :selector :accessor message-selector :initform nil)
    (arguments :initarg :arguments :accessor message-arguments :initform nil)))
 
-(define-smalltalk-method (message recipient)
-  (message-recipient self))
-
-(define-smalltalk-method (message :recipient recipient)
-  (setf (message-recipient self) recipient))
-
-(define-smalltalk-method (message selector)
-  (message-selector self))
-
-(define-smalltalk-method (message :selector selector)
-  (setf (message-selector self) selector))
-
-(define-smalltalk-method (message arguments)
-  (message-arguments self))
-
-(define-smalltalk-method (message :arguments arguments)
-  (setf (message-arguments self) arguments))
-
 ;;; Message not understood
 
 (define-condition message-not-understood (error)
@@ -44,11 +26,6 @@
 
 (defmethod does-not-understand ((self object) message)
   (send self :does-not-understand message))
-
-(define-smalltalk-method (object :does-not-understand message)
-  (error 'message-not-understood
-         :recipient self
-         :message message))
 
 (defmethod no-applicable-method ((self symbolic-smalltalk-generic-function) &rest args)
   (if (find-class 'message nil)
