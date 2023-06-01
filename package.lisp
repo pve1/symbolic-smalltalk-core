@@ -33,12 +33,22 @@
            #:add-selector-to-class
            #:add-slot-accessor
 
+           ;; Testing methods
+           #:includes-selector-p
+           #:can-understand-p
+
            ;; Variables
            #:instance-variables
            #:class-variables
 
            ;; Subclassing
            #:subclass
+
+           ;; Accessing class hierarchy
+           #:superclass
+           #:subclasses
+           #:all-superclasses
+           #:all-subclasses
 
            ;; "Message not understood" condition.
            #:does-not-understand
