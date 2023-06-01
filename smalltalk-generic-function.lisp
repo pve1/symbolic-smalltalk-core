@@ -13,6 +13,12 @@
 
 (defmethod function-selector ((fun t)) nil)
 
+(defmethod (setf function-selector) (new (fun symbolic-smalltalk-generic-function))
+  (setf (slot-value fun 'function-selector)
+          (if (symbolp new)
+              (intern (string new) *method-package*)
+              new)))
+
 (defmethod initialize-instance :after ((fun symbolic-smalltalk-generic-function) &key lambda-list)
   (when (null lambda-list)
     (error "Lambda list is required."))
