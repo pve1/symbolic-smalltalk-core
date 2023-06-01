@@ -282,7 +282,7 @@
           :until (eq var s)
           :collect var)))
 
-(defmethod subclass ((self class) name &key instance-variables class-variables)
+(defmethod subclass ((class class) name &key instance-variables class-variables)
   (when (stringp instance-variables)
     (setf instance-variables (read-variable-list instance-variables)))
   (when (stringp class-variables)
@@ -296,7 +296,7 @@
                               class-variables))
          (metaclass (closer-mop:ensure-class
                      (metaclass-name name)
-                     :direct-superclasses (list (class-of self))
+                     :direct-superclasses (list (class-of class))
                      :direct-slots class-slots
                      :metaclass (find-class 'symbolic-smalltalk-metaclass)))
          (instance-slots
@@ -305,7 +305,7 @@
                    instance-variables))
          (lisp-class (closer-mop:ensure-class
                       name
-                      :direct-superclasses (list (behavior-class self))
+                      :direct-superclasses (list (behavior-class class))
                       :direct-slots instance-slots
                       :metaclass (find-class 'symbolic-smalltalk-class))))
 
