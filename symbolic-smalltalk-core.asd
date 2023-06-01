@@ -11,7 +11,7 @@
                (:file "smalltalk-generic-function")
                (:file "smalltalk-class")
                (:file "base-classes")
-               (:file "message")
+               (:file "message-not-understood")
                (:file "define-method")
                (:file "define-class"))
   :depends-on (:closer-mop))
