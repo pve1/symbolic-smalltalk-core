@@ -76,7 +76,8 @@
           :collect (closer-mop:slot-definition-name slot-definition)))
 
 (defun selector-specializers (class selector)
-  (check-type class standard-class)
+  (when (typep class 'behavior)
+    (setf class (behavior-class class)))
   (case (classify-selector selector)
     (:unary (list class))
     (:binary (list class (find-class t)))
