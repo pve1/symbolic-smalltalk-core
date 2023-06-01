@@ -13,6 +13,7 @@
   (:export #:symbolic-smalltalk-class
            #:symbolic-smalltalk-metaclass
            #:symbolic-smalltalk-generic-function
+           #:the-class
 
            ;; Smalltalk classes
            #:proto-object
@@ -22,33 +23,39 @@
            #:class
            #:metaclass
 
+           ;; Instance creation
            #:new
            #:basic-new
-           #:instance-variables
-           #:class-variables
+
+           ;; Adding methods
            #:add-method-to-class
            #:remove-method-from-class
            #:add-selector-to-class
            #:add-slot-accessor
+
+           ;; Variables
+           #:instance-variables
+           #:class-variables
+
+           ;; Subclassing
            #:subclass
-           #:the-class
 
            ;; "Message not understood" condition.
-           #:message
-           #:message-recipient
-           #:message-selector
-           #:message-arguments
-           #:message-not-understood
            #:does-not-understand
+           #:message-not-understood
+           #:message-not-understood-recipient
+           #:message-not-understood-arguments
+           #:message-not-understood-selector
+           #:message-not-understood-function
 
            ;; Translating selectors into symbols.
            #:selector
            #:translate-selector
 
            ;; Definition macros
+           #:define-class
            #:define-method
            #:define-class-method
-           #:define-class
 
            ;; Sending messages in Lisp
            #:send
