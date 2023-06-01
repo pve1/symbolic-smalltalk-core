@@ -183,6 +183,46 @@
             (push sel methods)))))
     methods))
 
+(defmethod superclass ((behavior behavior))
+  (let ((super (first
+                (closer-mop:class-direct-superclasses
+                 (behavior-class behavior)))))
+    ;; Pretend that proto-object has no superclass.
+    (if (typep super 'symbolic-smalltalk-class)
+        (metaclass-instance super)
+        nil)))
+
+(defmethod all-superclasses ((behavior behavior))
+  (let ((super (superclass behavior)))
+    (if super
+        (cons super (all-superclasses super))
+        nil)))
+
+(defmethod subclasses ((behavior behavior))
+  (mapcar #'metaclass-instance
+          (closer-mop:class-direct-subclasses
+           (behavior-class behavior))))
+
+(defmethod includes-selector-p ((behavior behavior) selector)
+  (let* ((sel (translate-selector selector))
+         (spec (selector-specializers behavior sel)))
+     (and (fboundp sel)
+          (find-method (fdefinition sel) nil spec nil)
+          t)))
+
+(defmethod can-understand-p ((behavior behavior) selector)
+  (let* ((sel (translate-selector selector)))
+    (when (fboundp sel)
+      (let* ((spec (selector-specializers behavior sel))
+             (classes (cons behavior (all-superclasses behavior)))
+             (fun (fdefinition sel)))
+        (loop :for class :in classes
+              :when (find-method fun
+                                 nil
+                                 (cons (behavior-class class) (rest spec))
+                                 nil)
+                :return class)))))
+
 ;;; Class description
 
 (define-smalltalk-class class-description (behavior)
