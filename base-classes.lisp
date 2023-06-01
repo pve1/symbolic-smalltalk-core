@@ -123,6 +123,7 @@
                  (with-class-variables (,the-self ,(class-name (behavior-class class)))
                    (with-instance-variables (,the-self ,(class-name (behavior-class class)))
                      ,method-lambda)))))
+        (setf (function-selector gf) selector)
         (add-method gf (apply #'make-instance
                               (closer-mop:generic-function-method-class gf)
                               :specializers specializers

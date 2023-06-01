@@ -39,6 +39,7 @@
            #:message-selector
            #:message-arguments
            #:message-not-understood
+           #:does-not-understand
 
            ;; Translating selectors into symbols.
            #:selector

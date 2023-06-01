@@ -3,21 +3,28 @@
 ;;; Methods
 
 (defclass symbolic-smalltalk-generic-function (standard-generic-function)
-  (arity)
+  ((function-selector :initarg :function-selector
+                      :accessor function-selector
+                      :initform nil)
+   (function-arity :initarg :function-arity
+                   :accessor function-arity
+                   :initform nil))
   (:metaclass closer-mop:funcallable-standard-class))
 
-(defmethod initialize-instance :after ((self symbolic-smalltalk-generic-function) &key lambda-list)
+(defmethod function-selector ((fun t)) nil)
+
+(defmethod initialize-instance :after ((fun symbolic-smalltalk-generic-function) &key lambda-list)
   (when (null lambda-list)
     (error "Lambda list is required."))
-  (setf (slot-value self 'arity) (length lambda-list))
+  (setf (function-arity fun) (length lambda-list))
   (closer-mop:set-funcallable-instance-function
-   self
+   fun
    (lambda (&rest rest)
-     (no-applicable-method self rest))))
+     (no-applicable-method fun rest))))
 
-(defmethod remove-method :after ((self symbolic-smalltalk-generic-function) method)
-  (when (null (closer-mop:generic-function-methods self))
+(defmethod remove-method :after ((fun symbolic-smalltalk-generic-function) method)
+  (when (null (closer-mop:generic-function-methods fun))
     (closer-mop:set-funcallable-instance-function
-     self
+     fun
      (lambda (&rest rest)
-       (no-applicable-method self rest)))))
+       (no-applicable-method fun rest)))))

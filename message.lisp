@@ -1,37 +1,28 @@
 (in-package :symbolic-smalltalk-core)
 
-;;; Message
-
-(define-smalltalk-class message (object)
-  ((recipient :initarg :recipient :accessor message-recipient :initform nil)
-   (selector :initarg :selector :accessor message-selector :initform nil)
-   (arguments :initarg :arguments :accessor message-arguments :initform nil)))
-
 ;;; Message not understood
 
 (define-condition message-not-understood (error)
   ((recipient :initarg :recipient
               :accessor message-not-understood-recipient)
-   (message :initarg :message
-            :accessor message-not-understood-message))
+   (arguments :initarg :arguments
+              :accessor message-not-understood-arguments)
+   (selector :initarg :selector
+             :accessor message-not-understood-selector)
+   (function :initarg :function :accessor message-not-understood-function))
   (:report (lambda (c s)
-             (format s "~S cannot understand ~A."
+             (format s "~S cannot understand ~S~@[ ~S~]."
                      (message-not-understood-recipient c)
-                     (message-selector (message-not-understood-message c))))))
+                     (message-not-understood-selector c)
+                     (message-not-understood-arguments c)))))
 
-(defmethod does-not-understand (self message)
+;;; Users of this package may want to specialize this on Object.
+(defmethod does-not-understand (recipient arguments function)
   (error 'message-not-understood
-         :recipient self
-         :message message))
-
-(defmethod does-not-understand ((self object) message)
-  (send self :does-not-understand message))
+         :recipient recipient
+         :arguments arguments
+         :selector (function-selector function)
+         :function (closer-mop:generic-function-name function)))
 
 (defmethod no-applicable-method ((self symbolic-smalltalk-generic-function) &rest args)
-  (if (find-class 'message nil)
-      (does-not-understand
-       (first args)
-       (make-instance 'message :recipient (first args)
-                               :arguments (rest args)
-                               :selector (closer-mop:generic-function-name self)))
-      (error "~S cannot understand ~S." args self)))
+  (does-not-understand (first args) (rest args) self))

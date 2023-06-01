@@ -14,11 +14,12 @@
 (defun make-smalltalk-define-method-form (type message body)
   (let* ((parameters (extract-parameters-from-message message))
          (self (self))
+         (selector (extract-selector-from-message message))
          (lambda-form `(lambda (,self ,@parameters)
                          ,@body)))
     `(eval-when (:compile-toplevel :load-toplevel :execute)
        (add-method-to-class (the-class ',type)
-                            ',(extract-selector-from-message message)
+                            ',selector
                             ',lambda-form))))
 
 (defun make-standard-define-method-form (type message body)
@@ -31,7 +32,9 @@
        (eval-when (:compile-toplevel :load-toplevel :execute)
          (handler-bind ((warning #'muffle-warning))
            (defgeneric ,function-name (,self ,@generic-parameters)
-             (:generic-function-class symbolic-smalltalk-generic-function))))
+             (:generic-function-class symbolic-smalltalk-generic-function)))
+         (setf (function-selector #',function-name)
+               ',(extract-selector-from-message message)))
        (defmethod ,function-name ((,self ,type) ,@parameters)
          ,@body))))
 

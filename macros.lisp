@@ -16,6 +16,8 @@
     `(progn
        (defgeneric ,actual-name (,(self) ,@parameter-list)
          (:generic-function-class symbolic-smalltalk-generic-function))
+       (setf (function-selector #',actual-name)
+             ',(extract-selector-from-message parameters))
        (defmethod ,actual-name ((,(self) ,class) ,@actual-parameters)
          ,@body))))
 
