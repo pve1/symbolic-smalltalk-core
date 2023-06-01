@@ -4,7 +4,7 @@
   (translate-send recipient message))
 
 (defmacro send-class (recipient &body message)
-  (translate-send `(the-class ,recipient) message))
+  (translate-send `(the-class ',recipient) message))
 
 (defmacro cascade (recipient &body messages)
   (let* ((r (gensym))
