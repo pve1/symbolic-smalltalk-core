@@ -132,12 +132,12 @@
                               :function (funcall (compile nil final-lambda-expression))
                               initargs))))))
 
-(defmethod remove-method-from-class ((self behavior) selector)
+(defmethod remove-method-from-class ((behavior behavior) selector)
   (let* ((selector-symbol (translate-selector selector))
          (gf (fdefinition selector-symbol))
          (method (find-method gf
                               nil
-                              (selector-specializers (behavior-class self)
+                              (selector-specializers (behavior-class behavior)
                                                      selector))))
     (remove-method gf method)))
 
@@ -157,17 +157,17 @@
 
 ;; Todo: Investigate using STANDARD-INSTANCE-ACCESS.
 
-(defmethod add-slot-accessor ((self behavior) slot-name)
+(defmethod add-slot-accessor ((behavior behavior) slot-name)
   (let ((value (gensym)))
-    (add-method-to-class self
+    (add-method-to-class behavior
                          slot-name
-                         `(lambda (self)
-                            (slot-value self ',slot-name)))
-    (add-method-to-class self
+                         `(lambda (behavior)
+                            (slot-value behavior ',slot-name)))
+    (add-method-to-class behavior
                          (list (intern (string slot-name) :keyword))
-                         `(lambda (self ,value)
-                            (setf (slot-value self ',slot-name) ,value)
-                            self))))
+                         `(lambda (behavior ,value)
+                            (setf (slot-value behavior ',slot-name) ,value)
+                            behavior))))
 
 (defmethod behavior-selectors ((behavior behavior))
   (let (methods)
