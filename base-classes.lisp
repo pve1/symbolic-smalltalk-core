@@ -203,6 +203,30 @@
           (closer-mop:class-direct-subclasses
            (behavior-class behavior))))
 
+(defmethod all-subclasses ((behavior behavior))
+  (let* ((direct-subclasses (subclasses behavior))
+         (all-subclasses nil)
+         (stack1 (list direct-subclasses))
+         (stack2 nil))
+    ;; Collect subclasses breadth-first.
+    ;; Loop until both stacks are empty.
+    (loop :while (or stack1 stack2)
+          :do (when (null stack1)
+                ;; Swap stacks
+                (setf stack1 stack2
+                      stack2 nil))
+              (loop :for classes = (if stack1
+                                       (pop stack1)
+                                       nil)
+                    :while classes
+                    ;; Collect into stack2
+                    :do (loop :for class :in classes
+                              :do (push class all-subclasses)
+                                  (let ((subclasses (subclasses class)))
+                                    (when subclasses
+                                      (push subclasses stack2))))))
+    (nreverse all-subclasses)))
+
 (defmethod includes-selector-p ((behavior behavior) selector)
   (let* ((sel (translate-selector selector))
          (spec (selector-specializers behavior sel)))
