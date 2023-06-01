@@ -215,9 +215,7 @@
                 ;; Swap stacks
                 (setf stack1 stack2
                       stack2 nil))
-              (loop :for classes = (if stack1
-                                       (pop stack1)
-                                       nil)
+              (loop :for classes = (pop stack1)
                     :while classes
                     ;; Collect into stack2
                     :do (loop :for class :in classes
