@@ -76,6 +76,7 @@
           :collect (closer-mop:slot-definition-name slot-definition)))
 
 (defun selector-specializers (class selector)
+  (check-type class standard-class)
   (case (classify-selector selector)
     (:unary (list class))
     (:binary (list class (find-class t)))
@@ -167,6 +168,19 @@
                          `(lambda (self ,value)
                             (setf (slot-value self ',slot-name) ,value)
                             self))))
+
+(defmethod behavior-selectors ((behavior behavior))
+  (let (methods)
+    (do-symbols (sym *method-package*)
+      (when (fboundp sym)
+        (let* ((fun (fdefinition sym))
+               (sel (function-selector fun))
+               (spec (selector-specializers (behavior-class behavior)
+                                            sel))
+               (method (find-method fun nil spec nil)))
+          (when method
+            (push sel methods)))))
+    methods))
 
 ;;; Class description
 
