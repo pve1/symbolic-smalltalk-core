@@ -100,9 +100,9 @@
            class-vars)
        ,@body)))
 
-;; (add-selector-to-class (the-class 'object)
-;;                        '(:foo x :bar y)
-;;                        '(lambda (self x y) ...))
+;; (add-method-to-class (the-class 'object)
+;;                      '(:foo x :bar y)
+;;                      '(lambda (self x y) ...))
 
 (defmethod add-method-to-class ((class behavior) selector lambda-form)
   (assert (eq 'lambda (first lambda-form)))
