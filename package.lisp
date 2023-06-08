@@ -71,4 +71,7 @@
            #:send
            #:send-class
            #:cascade
-           #:selector))
+           #:selector
+
+           ;; Self
+           #:self))

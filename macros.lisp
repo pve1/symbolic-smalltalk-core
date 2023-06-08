@@ -1,10 +1,10 @@
 (in-package :symbolic-smalltalk-core)
 
-;; Helper macros just to get the basics going. These are *not* going to
-;; be exported.
-
 (defun self ()
   (intern "SELF" *package*))
+
+;; Helper macros just to get the basics going. These are *not* going to
+;; be exported.
 
 (defmacro define-smalltalk-method ((class &rest parameters) &body body)
   (let* ((actual-name (translate-message parameters))
