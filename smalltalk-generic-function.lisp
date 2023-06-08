@@ -33,4 +33,4 @@
     (closer-mop:set-funcallable-instance-function
      fun
      (lambda (&rest rest)
-       (no-applicable-method fun rest)))))
+       (apply #'no-applicable-method fun rest)))))
