@@ -1,7 +1,10 @@
 (in-package :symbolic-smalltalk-core)
 
 (defmacro send (recipient &body message)
-  (translate-send recipient message))
+  (if (and (symbolp recipient)
+           (string= "SUPER" recipient))
+      `(call-next-method ,(self) ,@(extract-parameters-from-message message))
+      (translate-send recipient message)))
 
 (defmacro send-class (recipient &body message)
   (translate-send `(the-class ',recipient) message))
