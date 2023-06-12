@@ -32,3 +32,11 @@
                         :collect `(send ,r ,@m*))))
     `(let ((,r ,recipient))
        ,@cascade)))
+
+;; Special cascade* to make parsing easier.
+(defmacro cascade* (recipient &body messages)
+  (destructuring-bind (send operand &rest message) recipient
+    (declare (ignore send))
+    `(cascade ,operand
+       ,message
+       ,@(mapcar #'cddr messages))))
