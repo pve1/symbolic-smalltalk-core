@@ -1,16 +1,10 @@
 (in-package :symbolic-smalltalk-core)
 
-(defun call-super (method args)
-  (let* ((super-class
-           (class-name
-            (first (closer-mop:class-direct-superclasses (class-of (first args))))))
-         (super-method
-           (find super-class (closer-mop:compute-applicable-methods-using-classes
-                              method
-                              (mapcar #'class-of args))
-                 :key (lambda (x)
-                        (class-name (first (closer-mop:method-specializers x)))))))
-    (funcall (closer-mop:method-function super-method) args nil)))
+(defun call-super (gf args)
+  (let* ((methods (closer-mop:compute-applicable-methods-using-classes
+                   gf
+                   (mapcar #'class-of args))))
+    (funcall (closer-mop:method-function (second methods)) args nil)))
 
 (defmacro send (recipient &body message)
   (if (and (symbolp recipient)
