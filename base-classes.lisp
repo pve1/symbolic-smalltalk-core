@@ -101,7 +101,7 @@
        ,@body)))
 
 ;; (add-method-to-class (the-class 'object)
-;;                      '(:foo x :bar y)
+;;                      '(:foo :bar)
 ;;                      '(lambda (self x y) ...))
 
 (defmethod add-method-to-class ((class behavior) selector lambda-form)
